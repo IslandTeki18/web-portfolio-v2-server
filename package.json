@@ -1,14 +1,13 @@
 {
   "name": "portfolio",
   "version": "1.0.0",
-  "description": "This is my personal web portfolio.",
+  "description": "Personal Portfolio Server",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node backend/server",
     "data:import": "node backend/seeder",
-    "data:destroy": "node backend/seeder -d",
-    "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend"
+    "data:destroy": "node backend/seeder -d"
   },
   "author": "Landon McKell",
   "license": "MIT",
@@ -25,7 +24,6 @@
     "path": "^0.12.7"
   },
   "devDependencies": {
-    "concurrently": "^6.4.0",
     "nodemon": "^2.0.15"
   }
 }
