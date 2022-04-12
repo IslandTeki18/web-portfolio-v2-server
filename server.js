@@ -1,19 +1,21 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
+import cors from "cors";
 import connectDB from "./src/config/db.js";
 import { notFound, errorHandler } from "./src/middleware/errorMiddleware.js";
 
-import projectRoutes from "./src/routes/projectRoutes.js";
-import contactRoutes from "./src/routes/contactRoutes.js";
-import userRoutes from "./src/routes/userRoutes.js";
-import uploadRoutes from "./src/routes/uploadRoutes.js";
+import projectRoutes from "./src/api/projectRoutes.js";
+import contactRoutes from "./src/api/contactRoutes.js";
+import userRoutes from "./src/api/userRoutes.js";
+import uploadRoutes from "./src/api/uploadRoutes.js";
 
 dotenv.config();
 connectDB();
 const app = express();
 
 app.use(express.json());
+app.use(cors());
 
 app.use("/api/projects", projectRoutes);
 app.use("/api/contacts", contactRoutes);
