@@ -6,8 +6,8 @@ import {
   deleteContactInfo,
   updateContactInfo,
   getContactInfoById,
-} from "../controllers/contactController.js";
-import { protect, admin } from "../middleware/authMiddleware.js";
+} from "../services/contact.service.js";
+import { protect, admin } from "../middleware/auth.middleware.js";
 
 router
   .route("/")

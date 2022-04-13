@@ -1,5 +1,5 @@
 import asyncHandler from "express-async-handler";
-import Project from "../models/projectModel.js";
+import Project from "../models/project.model.js";
 
 //@desc     Get all project
 //@route    GET /api/projects

@@ -4,8 +4,8 @@ import {
   getAdminProfile,
   postAuthUser,
   putUpdateAdmin
-} from "../controllers/userController.js";
-import { protect, admin } from "../middleware/authMiddleware.js";
+} from "../services/user.service.js";
+import { protect, admin } from "../middleware/auth.middleware.js";
 
 router.post("/login", postAuthUser);
 router.route("/settings").put(protect, admin, putUpdateAdmin).get(protect, admin, getAdminProfile)

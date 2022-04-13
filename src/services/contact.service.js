@@ -1,5 +1,5 @@
 import asycnHandler from "express-async-handler";
-import Contact from "../models/contactModel.js";
+import Contact from "../models/contact.model.js";
 
 //@desc     Create new contact object
 //@route    POST /api/contacts/contact

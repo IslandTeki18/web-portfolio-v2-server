@@ -3,12 +3,12 @@ import path from "path";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./src/config/db.js";
-import { notFound, errorHandler } from "./src/middleware/errorMiddleware.js";
+import { notFound, errorHandler } from "./src/middleware/error.middleware.js";
 
-import projectRoutes from "./src/api/projectRoutes.js";
-import contactRoutes from "./src/api/contactRoutes.js";
-import userRoutes from "./src/api/userRoutes.js";
-import uploadRoutes from "./src/api/uploadRoutes.js";
+import projectRoutes from "./src/api/project.api.js";
+import contactRoutes from "./src/api/contact.api.js";
+import userRoutes from "./src/api/user.api.js";
+import uploadRoutes from "./src/api/upload.api.js";
 
 dotenv.config();
 connectDB();

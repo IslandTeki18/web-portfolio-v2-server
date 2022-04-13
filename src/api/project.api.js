@@ -6,8 +6,8 @@ import {
   postNewProject,
   putProjectById,
   deleteProjectById,
-} from "../controllers/projectController.js";
-import { protect, admin } from "../middleware/authMiddleware.js";
+} from "../services/project.service.js";
+import { protect, admin } from "../middleware/auth.middleware.js";
 
 router.route("/").get(getAllProjects).post(protect, admin, postNewProject);
 router
