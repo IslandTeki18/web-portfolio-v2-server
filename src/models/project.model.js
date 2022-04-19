@@ -1,6 +1,26 @@
 import mongoose from "mongoose";
+const { Schema } = mongoose;
 
-const projectSchema = mongoose.Schema(
+const developerFeedbackSchema = new Schema(
+  {
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Project",
+    },
+    title: {
+      type: String,
+    },
+    description: {
+      type: String,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const projectSchema = new Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -11,19 +31,28 @@ const projectSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    shortDescription: {
+    description: {
       type: String,
       required: true,
     },
-    longDescription: {
+    type: {
       type: String,
       required: true,
     },
-    img: {
-      type: String
-    },
-    trelloUrl: {
+    designer: {
       type: String,
+      required: false,
+    },
+    designType: {
+      type: String,
+      required: false,
+    },
+    client: {
+      type: String,
+      required: false,
+    },
+    images: {
+      type: [String],
     },
     githubUrl: {
       type: String,
@@ -31,18 +60,20 @@ const projectSchema = mongoose.Schema(
     projectUrl: {
       type: String,
     },
-    frontendStack: {
+    techStack: {
       type: [String],
     },
-    backendStack: {
-      type: [String],
-    },
-    databaseStack: {
-      type: [String],
-    },
+    developerFeedback: [developerFeedbackSchema],
+    relatedProjects: [
+      {
+        title: { type: String },
+        projectType: { type: String },
+        link: { type: String },
+      },
+    ],
     status: {
       type: String,
-      default: "Under Construction",
+      default: "Not Live",
       enum: ["Live", "Under Construction", "Not Live", "Remodeling"],
     },
   },
@@ -52,5 +83,9 @@ const projectSchema = mongoose.Schema(
 );
 
 const Project = mongoose.model("Project", projectSchema);
+const ProjectFeedback = mongoose.model(
+  "ProjectFeedback",
+  developerFeedbackSchema
+);
 
-export default Project;
+export { Project, ProjectFeedback };
