@@ -76,21 +76,27 @@ const putProjectById = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Project Not Found.");
   }
-
-  project.title = title || project.title;
-  project.description = description || project.description;
-  project.type = type || project.type;
-  project.designer = designer || project.designer;
-  project.designType = designType || project.designType;
-  project.client = client || project.client;
-  project.images = images || project.images;
-  project.githubUrl = githubUrl || project.githubUrl;
-  project.projectUrl = projectUrl || project.projectUrl;
-  project.techStack = techStack || project.techStack;
-  project.developerFeedback = developerFeedback || project.developerFeedback;
-  project.relatedProjects = relatedProjects || project.relatedProjects;
-  project.status = status || project.status;
-  res.json(updatedProject);
+  try {
+    project.user = req.user._id;
+    project.title = title || project.title;
+    project.description = description || project.description;
+    project.type = type || project.type;
+    project.designer = designer || project.designer;
+    project.designType = designType || project.designType;
+    project.client = client || project.client;
+    project.images = images === "" ? [] : images || project.images;
+    project.githubUrl = githubUrl || project.githubUrl;
+    project.projectUrl = projectUrl || project.projectUrl;
+    project.techStack = techStack || project.techStack;
+    project.developerFeedback = developerFeedback || project.developerFeedback;
+    project.relatedProjects = relatedProjects || project.relatedProjects;
+    project.status = status || project.status;
+    await project.save();
+    res.json(project);
+  } catch (error) {
+    res.status(500);
+    throw new Error(error);
+  }
 });
 
 //@desc     Delete a Project
