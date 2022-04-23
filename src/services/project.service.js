@@ -14,6 +14,18 @@ const getAllProjects = asyncHandler(async (req, res) => {
   res.json(projects);
 });
 
+//@desc     Get a limited of 6 projects
+//@route    GET /api/projects
+//@access   Public
+const getLimitedProjects = asyncHandler(async (req, res) => {
+  const projects = await Project.find({}).sort({ createdAt: -1 }).limit(6);
+  if (!projects) {
+    res.status(404);
+    throw new Error("Projects not found.");
+  }
+  res.status(200).json(projects);
+});
+
 //@desc     Get single project by id
 //@route    GET /api/projects/:id
 //@access   Public
@@ -182,8 +194,82 @@ const updateDeveloperFeedback = asyncHandler(async (req, res) => {
   res.send({ msg: "Feedback Updated." });
 });
 
+//@desc     Create a related project object
+//@route    POST /api/projects/:id/create-related
+//@access   Private/Admin
+const createRelatedProjectObj = asyncHandler(async (req, res) => {
+  const project = await Project.findById(req.params.id);
+  if (!project) {
+    res.status(404);
+    throw new Error("Project not found.");
+  }
+  const { title, projectType, link } = req.body;
+  try {
+    let newRelatedObj = {
+      title,
+      projectType,
+      link,
+    };
+    project.relatedProjects.push(newRelatedObj);
+    project.save();
+    res.status(200).json({ msg: "Related Project Created.", project });
+  } catch (error) {
+    res.status(500);
+    throw new Error(error);
+  }
+});
+
+//@desc     Delete a related project object
+//@route    DELETE /api/projects/:id/remove-related
+//@access   Private/Admin
+// const deleteRelatedProjectObj = asyncHandler(async (req, res) => {
+//   const project = await Project.findById(req.params.id)
+//   if (!project) {
+//     res.status(404)
+//     throw new Error("Project not found.")
+//   }
+//   try {
+//     project.relatedProjects.filter(item => item === )
+//   } catch (error) {
+//     res.status(500)
+//     throw new Error(error)
+//   }
+// })
+
+//@desc     Edit a related project object
+//@route    PUT /api/projects/:id/edit-related
+//@access   Private/Admin
+
+const projectModelChange = () =>
+  asyncHandler(async (req, res) => {
+    try {
+      const result = await Project.updateMany(
+        {},
+        {
+          $unset: {
+            backendStack,
+            databaseStack,
+            frontendStack,
+            trelloUrl,
+            shortDescription,
+            longDescription,
+            img,
+          },
+        },
+        {
+          strict: false,
+        }
+      );
+      res.status(200).send(result);
+    } catch (error) {
+      res.status(500);
+      throw new Error(error);
+    }
+  });
+
 export {
   getAllProjects,
+  getLimitedProjects,
   postNewProject,
   putProjectById,
   getProjectById,
@@ -191,4 +277,6 @@ export {
   createDeveloperFeedback,
   deleteDeveloperFeedback,
   updateDeveloperFeedback,
+  createRelatedProjectObj,
+  projectModelChange,
 };

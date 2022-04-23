@@ -2,6 +2,7 @@ import express from "express";
 const router = express.Router();
 import {
   getAllProjects,
+  getLimitedProjects,
   getProjectById,
   postNewProject,
   putProjectById,
@@ -9,10 +10,12 @@ import {
   createDeveloperFeedback,
   deleteDeveloperFeedback,
   updateDeveloperFeedback,
+  projectModelChange,
 } from "../services/project.service.js";
 import { protect, admin } from "../middleware/auth.middleware.js";
 
 router.route("/").get(getAllProjects).post(protect, admin, postNewProject);
+router.route("/limited").get(getLimitedProjects);
 router
   .route("/:id")
   .get(getProjectById)
