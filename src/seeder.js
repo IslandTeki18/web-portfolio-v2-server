@@ -1,9 +1,9 @@
 import dotenv from "dotenv";
 import projects from "./tempdata/projects.js";
 import users from "./tempdata/users.js";
-import Project from "./models/projectModel.js";
-import User from "./models/userModel.js";
-import Contact from "./models/contactModel.js";
+import { Project } from "./models/project.model.js";
+import { User } from "./models/user.model.js";
+import { Contact } from "./models/contact.model.js";
 import connectDB from "./config/db.js";
 
 dotenv.config();
@@ -33,6 +33,18 @@ const importData = async () => {
   }
 };
 
+const removeUsers = async () => {
+  try {
+    await User.deleteMany();
+    await User.insertMany(users);
+
+    process.exit();
+  } catch (error) {
+    console.error(`${error}`);
+    process.exit(1);
+  }
+};
+
 const destroyData = async () => {
   try {
     await Project.deleteMany();
@@ -51,5 +63,5 @@ const destroyData = async () => {
 if (process.argv[2] === "-d") {
   destroyData();
 } else {
-  importData();
+  removeUsers();
 }
