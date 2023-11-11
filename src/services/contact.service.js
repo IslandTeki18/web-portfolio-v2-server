@@ -4,29 +4,36 @@ import { Contact } from "../models/contact.model.js";
 //@desc     Create new contact object
 //@route    POST /api/contacts/contact
 //@access   Public
-const postNewContactInfo = asycnHandler(async (req, res) => {
-  const { name, phone, email, message } = req.body;
+const postNewContactInfo = async (req, res) => {
+  try {
+    const { name, phone, email, message } = req.body;
 
-  const contactInfo = await Contact.create({
-    name,
-    phone,
-    email,
-    message,
-  });
-
-  if (contactInfo) {
-    res.status(201).json({
-      _id: contactInfo._id,
-      name: contactInfo.name,
-      phone: contactInfo.phone,
-      email: contactInfo.email,
-      message: contactInfo.message,
+    // Create a new contact record
+    const contactInfo = await Contact.create({
+      name,
+      phone,
+      email,
+      message,
     });
-  } else {
-    res.status(400);
-    throw new Error("Invalid Contact Information");
+
+    // Check if the contactInfo was created successfully
+    if (contactInfo) {
+      res.status(201).json({
+        _id: contactInfo._id,
+        name: contactInfo.name,
+        phone: contactInfo.phone,
+        email: contactInfo.email,
+        message: contactInfo.message,
+      });
+    } else {
+      // Handle the case where contactInfo creation failed
+      res.status(400).json({ error: "Invalid Contact Information" });
+    }
+  } catch (error) {
+    console.error("Error creating contact:", error);
+    res.status(500).json({ error: "Server Error" });
   }
-});
+};
 
 //@desc     Delete contact information by id
 //@route    DELETE /api/contacts/:id
