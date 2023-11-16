@@ -10,10 +10,33 @@ const developerFeedbackSchema = new Schema(
     },
     title: {
       type: String,
+      required: true,
     },
     description: {
       type: String,
+      required: true,
     },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const relatedProjectsSchema = new Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+    projectType: {
+      type: String,
+      required: true,
+    },
+    link: {
+      type: String,
+      required: true,
+    },
+    tags: [String],
   },
   {
     timestamps: true,
@@ -39,42 +62,20 @@ const projectSchema = new Schema(
       type: String,
       required: true,
     },
-    designer: {
-      type: String,
-      required: false,
-    },
-    designType: {
-      type: String,
-      required: false,
-    },
-    client: {
-      type: String,
-      required: false,
-    },
-    images: {
-      type: [String],
-    },
-    githubUrl: {
-      type: String,
-    },
-    projectUrl: {
-      type: String,
-    },
-    techStack: {
-      type: [String],
-    },
+    designer: String,
+    designType: String,
+    client: String,
+    images: [String],
+    githubUrl: String,
+    projectUrl: String,
+    techStack: [String],
+    tags: [String],
     developerFeedback: [developerFeedbackSchema],
-    relatedProjects: [
-      {
-        title: { type: String },
-        projectType: { type: String },
-        link: { type: String },
-      },
-    ],
+    relatedProjects: [relatedProjectsSchema],
     status: {
       type: String,
       default: "Not Live",
-      enum: ["Live", "Under Construction", "Not Live", "Remodeling"],
+      enum: ["Live", "Under Construction", "Not Live", "On Hold", "Remodeling"],
     },
   },
   {
@@ -87,5 +88,9 @@ const ProjectFeedback = mongoose.model(
   "ProjectFeedback",
   developerFeedbackSchema
 );
+const ProjectRelatedProjects = mongoose.model(
+  "ProjectRelatedProjects",
+  relatedProjectsSchema
+);
 
-export { Project, ProjectFeedback };
+export { Project, ProjectFeedback, ProjectRelatedProjects };
