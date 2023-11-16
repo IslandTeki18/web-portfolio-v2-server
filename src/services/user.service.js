@@ -1,68 +1,82 @@
-import asyncHandler from "express-async-handler";
 import { User } from "../models/user.model.js";
 import generateToken from "../utils/generateToken.js";
 
 //@desc     Get Auth User and Token
 //@route    GET /api/users/login
 //@access   Public
-const postAuthUser = asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
+const postAuthUser = async (req, res) => {
+  try {
+    const { username, password } = req.body;
 
-  const user = await User.findOne({ username });
+    const user = await User.findOne({ username });
 
-  if (user && (await user.matchPassword(password))) {
-    res.json({
-      _id: user._id,
-      username: user.username,
-      password: user.password,
-      isAdmin: user.isAdmin,
-      token: generateToken(user._id),
-    });
-  } else {
-    res.status(401);
-    throw new Error("Invalid Username or Password!");
+    if (user && (await user.matchPassword(password))) {
+      return res.json({
+        _id: user._id,
+        username: user.username,
+        password: user.password,
+        isAdmin: user.isAdmin,
+        token: generateToken(user._id),
+      });
+    } else {
+      return res
+        .status(401)
+        .json({ message: "Username or Password is invalid." });
+    }
+  } catch (error) {
+    console.error("Error with user login: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 //@desc     Get admin profile
 //@route    GET /api/users/profile
 //@access   Private
-const getAdminProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
-  if (user) {
-    res.json({
+const getAdminProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User Not Found." });
+    }
+    return res.json({
       _id: user._id,
       username: user.username,
       isAdmin: user.isAdmin,
     });
-  } else {
-    res.status(404);
-    throw new Error("User not found");
+  } catch (error) {
+    console.error("Error with getting user profile: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 //@desc     Update User Settings
 //@route    PUT /api/users/profile/settings
 //@access   Private/Admin
-const putUpdateAdmin = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
-  if (user) {
+const putUpdateAdmin = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({message: "User Not Found."})
+    }
+    
     user.username = req.body.username || user.username;
+
     if (req.body.password) {
       user.password = req.body.password;
     }
+
     const updatedAdmin = await user.save();
 
-    res.json({
+    return res.json({
       _id: updatedAdmin._id,
       username: updatedAdmin.username,
       isAdmin: updatedAdmin.isAdmin,
       token: generateToken(updatedAdmin._id),
     });
-  } else {
-    res.status(404);
-    throw new Error("User not found");
+  } catch (error) {
+    console.error("Error with updating user: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 export { postAuthUser, getAdminProfile, putUpdateAdmin };

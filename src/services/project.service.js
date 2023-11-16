@@ -1,94 +1,115 @@
-import asyncHandler from "express-async-handler";
 import { Project } from "../models/project.model.js";
 import { ProjectFeedback } from "../models/project.model.js";
 
 //@desc     Get all project
 //@route    GET /api/projects
 //@access   Public
-const getAllProjects = asyncHandler(async (req, res) => {
-  const projects = await Project.find({});
-  if (!projects) {
-    res.status(404);
-    throw new Error("Projects not found");
+const getAllProjects = async (req, res) => {
+  try {
+    const projects = await Project.find({});
+    if (!projects) {
+      return res.status(404).json({ message: "No Projects" });
+    }
+    return res.json(projects);
+  } catch (error) {
+    console.error("Error getting projects: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-  res.json(projects);
-});
+};
 
 //@desc     Get a limited of 6 projects
 //@route    GET /api/projects
 //@access   Public
-const getLimitedProjects = asyncHandler(async (req, res) => {
-  const projects = await Project.find({}).sort({ createdAt: -1 }).limit(6);
-  if (!projects) {
-    res.status(404);
-    throw new Error("Projects not found.");
+const getLimitedProjects = async (req, res) => {
+  try {
+    const projects = await Project.find({}).sort({ createdAt: -1 }).limit(6);
+    if (!projects) {
+      return res.status(404).json({ message: "No Projects" });
+    }
+    return res.status(200).json(projects);
+  } catch (error) {
+    console.error("Error getting limited projects: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-  res.status(200).json(projects);
-});
+};
 
 //@desc     Get single project by id
 //@route    GET /api/projects/:id
 //@access   Public
-const getProjectById = asyncHandler(async (req, res) => {
-  const project = await Project.findById(req.params.id);
-  if (!project) {
-    res.status(404);
-    throw new Error("Project not found");
+const getProjectById = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: "Project Not Found!" });
+    }
+    return res.json(project);
+  } catch (error) {
+    console.error("Error getting specific project: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-  return res.json(project);
-});
+};
 
 //@desc     Create New Project
 //@route    POST /api/projects
 //@access   Private/Admin
-const postNewProject = asyncHandler(async (req, res) => {
-  const project = new Project({
-    user: req.user._id,
-    title: "Project Title",
-    description: "Project Description",
-    type: "Project Type",
-    designer: "Project Designer",
-    designType: "Project Design Type",
-    client: "Project Client",
-    images: [],
-    githubUrl: "",
-    projectUrl: "",
-    techStack: [],
-    developerFeedback: [],
-    relatedProjects: [],
-    status: "Not Live",
-  });
+const postNewProject = async (req, res) => {
+  try {
+    const project = new Project({
+      user: req.user._id,
+      title: "Project Title",
+      description: "Project Description",
+      type: "Project Type",
+      designer: "Project Designer",
+      designType: "Project Design Type",
+      client: "Project Client",
+      images: [],
+      githubUrl: "",
+      projectUrl: "",
+      trelloUrl: "",
+      tags: [],
+      techStack: [],
+      developerFeedback: [],
+      relatedProjects: [],
+      status: "Not Live",
+    });
 
-  const createdProject = await project.save();
-  res.status(201).json(createdProject);
-});
+    const createdProject = await project.save();
+    return res.status(201).json(createdProject);
+  } catch (error) {
+    console.error("Error creating project: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
 
 //@desc     Update a Project
 //@route    PUT /api/projects/:id
 //@access   Private/Admin
-const putProjectById = asyncHandler(async (req, res) => {
-  const {
-    title,
-    description,
-    type,
-    designer,
-    designType,
-    client,
-    images,
-    githubUrl,
-    projectUrl,
-    techStack,
-    developerFeedback,
-    relatedProjects,
-    status,
-  } = req.body;
-
-  const project = await Project.findById(req.params.id);
-  if (!project) {
-    res.status(404);
-    throw new Error("Project Not Found.");
-  }
+const putProjectById = async (req, res) => {
   try {
+    const {
+      title,
+      description,
+      type,
+      designer,
+      designType,
+      client,
+      images,
+      tags,
+      trelloUrl,
+      githubUrl,
+      projectUrl,
+      techStack,
+      developerFeedback,
+      relatedProjects,
+      status,
+    } = req.body;
+
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project Not Found." });
+    }
+
     project.user = req.user._id;
     project.title = title || project.title;
     project.description = description || project.description;
@@ -97,132 +118,154 @@ const putProjectById = asyncHandler(async (req, res) => {
     project.designType = designType || project.designType;
     project.client = client || project.client;
     project.images = images === "" ? [] : images || project.images;
+    project.tags = tags || project.tags;
+    project.trelloUrl = trelloUrl || trelloUrl;
     project.githubUrl = githubUrl || project.githubUrl;
     project.projectUrl = projectUrl || project.projectUrl;
     project.techStack = techStack || project.techStack;
     project.developerFeedback = developerFeedback || project.developerFeedback;
     project.relatedProjects = relatedProjects || project.relatedProjects;
     project.status = status || project.status;
+
     await project.save();
-    res.json(project);
+
+    return res.json(project);
   } catch (error) {
-    res.status(500);
-    throw new Error(error);
+    console.error("Error updating project: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 //@desc     Delete a Project
 //@route    DELETE /api/projects/:id
 //@access   Private/Admin
-const deleteProjectById = asyncHandler(async (req, res) => {
-  const project = await Project.findById(req.params.id);
-
-  if (project) {
+const deleteProjectById = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: "Project Not Found." });
+    }
     await project.remove();
-    res.json({ message: "Project Removed" });
-  } else {
-    res.json(404);
-    throw new Error("Project not found");
+
+    return res.json({ message: "Project Removed" });
+  } catch (error) {
+    console.error("Error removing project: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 //@desc     Create a developer feedback
 //@route    POST /api/projects/:id/feedback
 //@access   Private/Admin
-const createDeveloperFeedback = asyncHandler(async (req, res) => {
-  const project = await Project.findById(req.params.id);
-  if (!project) {
-    res.status(404);
-    throw new Error("Project Not Found.");
-  }
+const createDeveloperFeedback = async (req, res) => {
   try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: "Project Not Found." });
+    }
     const newFeedback = new ProjectFeedback({
       projectId: project._id,
       title: req.body.title,
       description: req.body.description,
     });
+
     project.developerFeedback.push(newFeedback);
     project.save();
-    res.json(project);
+
+    return res.json(project);
   } catch (error) {
-    res.status(500);
-    throw new Error(error);
+    console.error("Error creating developer feedback: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 //@desc     Remove developer feedback
 //@route    DELETE /api/projects/:id/:feedback_id
 //@access   Private/Admin
-const deleteDeveloperFeedback = asyncHandler(async (req, res) => {
-  const project = await Project.findById(req.params.id);
-  if (!project) {
-    res.status(404);
-    throw new Error("Project not found.");
+const deleteDeveloperFeedback = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      res.status(404).json({ message: "Project Not Found." });
+    }
+
+    project.developerFeedback.id(req.params.feedback_id).remove();
+    project.save();
+
+    return res.send({ msg: "Feedback Removed.", project });
+  } catch (error) {
+    console.error("Error removing developer feedback: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-  project.developerFeedback.id(req.params.feedback_id).remove();
-  project.save();
-  res.send({ msg: "Feedback Removed.", project });
-});
+};
 
 //@desc     Edit single project feedback
 //@route    PUT /api/projects/:id/:feedback_id/edit
 //@access   Private/Admin
-const updateDeveloperFeedback = asyncHandler(async (req, res) => {
-  const project = await Project.findById(req.params.id);
-  if (!project) {
-    res.status(404);
-    throw new Error("Project not found.");
-  }
-  const feedbackObj = project.developerFeedback.find(
-    ({ id }) => id === req.params.feedback_id
-  );
-  if (feedbackObj === undefined) {
-    res.status(500);
-    throw new Error("Feedback object not found.");
-  }
-  if (req.body.title === "") {
-    feedbackObj.title = "";
-  }
-  feedbackObj.title = req.body.title || feedbackObj.title;
+const updateDeveloperFeedback = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
 
-  if (req.body.description === "") {
-    feedbackObj.description = "";
-  }
-  feedbackObj.description = req.body.description || feedbackObj.description;
+    if (!project) {
+      res.status(404).json({ message: "Project Not Found." });
+    }
 
-  project.save();
-  res.send({ msg: "Feedback Updated." });
-});
+    const feedbackObj = project.developerFeedback.find(
+      ({ id }) => id === req.params.feedback_id
+    );
+    if (!feedbackObj) {
+      res.status(404).json({ message: "Feedback Object Not Found." });
+    }
+
+    if (req.body.title === "") {
+      feedbackObj.title = "";
+    }
+    feedbackObj.title = req.body.title || feedbackObj.title;
+
+    if (req.body.description === "") {
+      feedbackObj.description = "";
+    }
+    feedbackObj.description = req.body.description || feedbackObj.description;
+
+    await project.save();
+
+    return res.send({ msg: "Feedback Updated." });
+  } catch (error) {
+    console.error("Error updating developer feedback: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
 
 //@desc     Create a related project object
 //@route    POST /api/projects/:id/create-related
 //@access   Private/Admin
-const createRelatedProjectObj = asyncHandler(async (req, res) => {
-  const project = await Project.findById(req.params.id);
-  if (!project) {
-    res.status(404);
-    throw new Error("Project not found.");
-  }
-  const { title, projectType, link } = req.body;
+const createRelatedProjectObj = async (req, res) => {
   try {
+    const { title, projectType, link, tags } = req.body;
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      res.status(404).json({ message: "Project Not Found." });
+    }
     let newRelatedObj = {
       title,
       projectType,
       link,
+      tags,
     };
     project.relatedProjects.push(newRelatedObj);
-    project.save();
-    res.status(200).json({ msg: "Related Project Created.", project });
+    await project.save();
+    
+    return res.status(200).json({ msg: "Related Project Created.", project });
   } catch (error) {
-    res.status(500);
-    throw new Error(error);
+    console.error("Error creating related project object: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 //@desc     Delete a related project object
 //@route    DELETE /api/projects/:id/remove-related
 //@access   Private/Admin
-// const deleteRelatedProjectObj = asyncHandler(async (req, res) => {
+// const deleteRelatedProjectObj = async (req, res) => {
 //   const project = await Project.findById(req.params.id)
 //   if (!project) {
 //     res.status(404)
@@ -234,38 +277,7 @@ const createRelatedProjectObj = asyncHandler(async (req, res) => {
 //     res.status(500)
 //     throw new Error(error)
 //   }
-// })
-
-//@desc     Edit a related project object
-//@route    PUT /api/projects/:id/edit-related
-//@access   Private/Admin
-
-const projectModelChange = () =>
-  asyncHandler(async (req, res) => {
-    try {
-      const result = await Project.updateMany(
-        {},
-        {
-          $unset: {
-            backendStack,
-            databaseStack,
-            frontendStack,
-            trelloUrl,
-            shortDescription,
-            longDescription,
-            img,
-          },
-        },
-        {
-          strict: false,
-        }
-      );
-      res.status(200).send(result);
-    } catch (error) {
-      res.status(500);
-      throw new Error(error);
-    }
-  });
+// }
 
 export {
   getAllProjects,
@@ -278,5 +290,4 @@ export {
   deleteDeveloperFeedback,
   updateDeveloperFeedback,
   createRelatedProjectObj,
-  projectModelChange,
 };

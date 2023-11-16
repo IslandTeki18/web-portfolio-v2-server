@@ -1,4 +1,3 @@
-import asycnHandler from "express-async-handler";
 import { Contact } from "../models/contact.model.js";
 
 //@desc     Create new contact object
@@ -8,88 +7,95 @@ const postNewContactInfo = async (req, res) => {
   try {
     const { name, phone, email, message } = req.body;
 
-    // Create a new contact record
-    const contactInfo = await Contact.create({
+    await Contact.create({
       name,
       phone,
       email,
       message,
     });
 
-    // Check if the contactInfo was created successfully
-    if (contactInfo) {
-      res.status(201).json({
-        _id: contactInfo._id,
-        name: contactInfo.name,
-        phone: contactInfo.phone,
-        email: contactInfo.email,
-        message: contactInfo.message,
-      });
-    } else {
-      // Handle the case where contactInfo creation failed
-      res.status(400).json({ error: "Invalid Contact Information" });
-    }
+    return res.status(201).json({
+      _id: contactInfo._id,
+      name: contactInfo.name,
+      phone: contactInfo.phone,
+      email: contactInfo.email,
+      message: contactInfo.message,
+    });
   } catch (error) {
-    console.error("Error creating contact:", error);
-    res.status(500).json({ error: "Server Error" });
+    console.error("Error creating contact object: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
 //@desc     Delete contact information by id
 //@route    DELETE /api/contacts/:id
 //@access   Private/Admin
-const deleteContactInfo = asycnHandler(async (req, res) => {
-  const contactInfo = await Contact.findById(req.params.id);
-  if (contactInfo) {
+const deleteContactInfo = async (req, res) => {
+  try {
+    const contactInfo = await Contact.findById(req.params.id);
     await contactInfo.remove();
-    res.json({ message: "Contact Information Deleted" });
-  } else {
-    res.status(404);
-    throw new Error("Contact Information not found.");
+    return res.json({ message: "Contact Information Deleted" });
+  } catch (error) {
+    console.error("Error removing contact object: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 //@desc     Update contact to haveRead
 //@route    PUT /api/contacts/contact/:id
 //@access   Private/Admin
-const updateContactInfo = asycnHandler(async (req, res) => {
-  const contact = await Contact.findById(req.params.id);
+const updateContactInfo = async (req, res) => {
+  try {
+    const contact = await Contact.findById(req.params.id);
+    if (!contact) {
+      return res.status(404).json({ message: "Contact Not Found." });
+    }
 
-  if (contact) {
     contact.haveRead = Boolean(req.body.haveRead);
 
     const updateContact = await contact.save();
 
-    res.json({
+    return res.json({
       _id: updateContact._id,
       haveRead: updateContact.haveRead,
     });
-  } else {
-    res.status(404);
-    throw new Error("Contact not found.");
+  } catch (error) {
+    console.error("Error updating contact object: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 //@desc     List all contact informations
 //@route    POST /api/contacts/
 //@access   Private/Admin
-const getAllContactInfo = asycnHandler(async (req, res) => {
-  const contactInfos = await Contact.find({});
-  res.json(contactInfos);
-});
+const getAllContactInfo = async (req, res) => {
+  try {
+    const contactInfos = await Contact.find({});
+    if (!contactInfos) {
+      return res.status(404).json({ message: "Contacts Not Found." });
+    }
+    return res.json(contactInfos);
+  } catch (error) {
+    console.error("Error gettting contact objects: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
 
 //@desc     Get contact info by ID
 //@route    GET /api/contacts/:id
 //@access   Private/Admin
-const getContactInfoById = asycnHandler(async (req, res) => {
-  const contact = await Contact.findById(req.params.id);
-  if (contact) {
+const getContactInfoById = async (req, res) => {
+  try {
+    const contact = await Contact.findById(req.params.id);
+    if (!contact)
+      return res.status(404).json({ message: "Contact Not Found." });
+
     return res.json(contact);
-  } else {
-    res.status(404);
-    throw new Error("Contact not found");
+  } catch (error) {
+    console.error("Error gettting specific contact object: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-});
+};
 
 export {
   postNewContactInfo,

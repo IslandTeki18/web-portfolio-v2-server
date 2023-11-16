@@ -1,9 +1,8 @@
-import asyncHandler from "express-async-handler";
 import aws from "aws-sdk";
 import fs from "fs";
 import path from "path";
 
-const uploadProductImage = asyncHandler((req, res) => {
+const uploadProductImage = (req, res) => {
   aws.config.setPromisesDependency();
   aws.config.update({
     credentials: {
@@ -38,6 +37,6 @@ const uploadProductImage = asyncHandler((req, res) => {
       res.send(locationUrl);
     }
   });
-});
+};
 
 export { uploadProductImage };
