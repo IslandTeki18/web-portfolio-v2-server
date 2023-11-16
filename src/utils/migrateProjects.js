@@ -1,25 +1,21 @@
+import mongoose from "mongoose";
 import { Project } from "../models/project.model.js";
 
-export async function migrateProjects() {
+async function migrateProjects() {
   try {
     console.log("Starting Migration");
+    mongoose.set("strictQuery", false);
+    await mongoose.connect(
+      "mongodb+srv://admin:9Wik7isWdtQEh4A@cluster0.basf6.mongodb.net/<dbname>?retryWrites=true&w=majority"
+    );
     const projects = await Project.find({});
-    if (!projects) {
-      console.log("No Projects");
-    } else {
-      for (var i = 0; i < projects.length; i++) {
-        console.log("Migration project: ", projects[i]._id);
-        projects[i].tags = [];
-        projects[i].relatedProjects = [];
-        await projects[i].save();
-        console.log("Project Migrated: ", project[i]._id);
-      }
-      console.log("Project Migration was successful.");
-    }
+
+    console.log("Project Migration was successful.");
   } catch (error) {
     console.log("Error during migration: ", error);
+  } finally {
+    mongoose.disconnect();
   }
 }
 
-migrateProjects()
-
+migrateProjects();

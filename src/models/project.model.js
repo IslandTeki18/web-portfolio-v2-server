@@ -11,6 +11,7 @@ const developerFeedbackSchema = new Schema(
     title: {
       type: String,
       required: true,
+      maxlength: 100,
     },
     description: {
       type: String,
@@ -27,6 +28,7 @@ const relatedProjectsSchema = new Schema(
     title: {
       type: String,
       required: true,
+      maxlength: 100,
     },
     projectType: {
       type: String,
@@ -35,6 +37,15 @@ const relatedProjectsSchema = new Schema(
     link: {
       type: String,
       required: true,
+      validate: {
+        validator: function (value) {
+          const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/;
+          return urlRegex.test(value);
+        },
+        message: (props) => `${props.value} is not a valid URL!`,
+      },
+      default: "",
+      sparse: true
     },
     tags: [String],
   },
@@ -53,6 +64,7 @@ const projectSchema = new Schema(
     title: {
       type: String,
       required: true,
+      maxlength: 150,
     },
     description: {
       type: String,
@@ -66,8 +78,51 @@ const projectSchema = new Schema(
     designType: String,
     client: String,
     images: [String],
-    githubUrl: String,
-    projectUrl: String,
+    trelloUrl: {
+      type: String,
+      validate: {
+        validator: function (value) {
+          const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/;
+          return value === "" || urlRegex.test(value);
+        },
+        message: (props) =>
+          props.value === ""
+            ? "Trello URL cannot be empty"
+            : `${props.value} is not a valid URL!`,
+      },
+      default: "",
+      sparse: true,
+    },
+    githubUrl: {
+      type: String,
+      validate: {
+        validator: function (value) {
+          const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/;
+          return value === "" || urlRegex.test(value);
+        },
+        message: (props) =>
+          props.value === ""
+            ? "GitHub URL cannot be empty"
+            : `${props.value} is not a valid URL!`,
+      },
+      default: "",
+      sparse: true,
+    },
+    projectUrl: {
+      type: String,
+      validate: {
+        validator: function (value) {
+          const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/;
+          return value === "" || urlRegex.test(value);
+        },
+        message: (props) =>
+          props.value === ""
+            ? "Project URL cannot be empty"
+            : `${props.value} is not a valid URL!`,
+      },
+      default: "",
+      sparse: true,
+    },
     techStack: [String],
     tags: [String],
     developerFeedback: [developerFeedbackSchema],
