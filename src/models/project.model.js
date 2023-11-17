@@ -45,7 +45,7 @@ const relatedProjectsSchema = new Schema(
         message: (props) => `${props.value} is not a valid URL!`,
       },
       default: "",
-      sparse: true
+      sparse: true,
     },
     tags: [String],
   },
@@ -70,12 +70,17 @@ const projectSchema = new Schema(
       type: String,
       required: true,
     },
-    type: {
+    designer: String,
+    projectType: String,
+    applicationType: {
       type: String,
       required: true,
     },
-    designer: String,
-    designType: String,
+    budget: String,
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
     client: String,
     images: [String],
     trelloUrl: {
