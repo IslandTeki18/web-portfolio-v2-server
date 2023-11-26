@@ -237,14 +237,14 @@ const updateDeveloperFeedback = async (req, res) => {
 };
 
 //@desc     Create a related project object
-//@route    POST /api/projects/:id/create-related
+//@route    POST /api/projects/:id/related
 //@access   Private/Admin
 const createRelatedProjectObj = async (req, res) => {
   try {
     const { title, projectType, link, tags } = req.body;
     const project = await Project.findById(req.params.id);
     if (!project) {
-      res.status(404).json({ message: "Project Not Found." });
+      return res.status(404).json({ message: "Project Not Found." });
     }
     let newRelatedObj = {
       title,
@@ -255,7 +255,9 @@ const createRelatedProjectObj = async (req, res) => {
     project.relatedProjects.push(newRelatedObj);
     await project.save();
 
-    return res.status(200).json({ msg: "Related Project Created.", project });
+    return res
+      .status(200)
+      .json({ message: "Related Project Created.", project });
   } catch (error) {
     console.error("Error creating related project object: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -263,21 +265,26 @@ const createRelatedProjectObj = async (req, res) => {
 };
 
 //@desc     Delete a related project object
-//@route    DELETE /api/projects/:id/remove-related
+//@route    DELETE /api/projects/:id/:related_id/remove
 //@access   Private/Admin
-// const deleteRelatedProjectObj = async (req, res) => {
-//   const project = await Project.findById(req.params.id)
-//   if (!project) {
-//     res.status(404)
-//     throw new Error("Project not found.")
-//   }
-//   try {
-//     project.relatedProjects.filter(item => item === )
-//   } catch (error) {
-//     res.status(500)
-//     throw new Error(error)
-//   }
-// }
+const deleteRelatedProjectObj = async (req, res) => {
+  try {
+    const { id, relatedProjectId } = req.params;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ message: "Project Not Found" });
+    }
+    await project.relatedProjects.id(relatedProjectId).remove()
+    await project.save();
+
+    return res
+      .status(200)
+      .json({ message: "Related Project Removed", project });
+  } catch (error) {
+    console.error("Error creating related project object: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
 
 export {
   getAllProjects,
@@ -290,4 +297,5 @@ export {
   deleteDeveloperFeedback,
   updateDeveloperFeedback,
   createRelatedProjectObj,
+  deleteRelatedProjectObj,
 };

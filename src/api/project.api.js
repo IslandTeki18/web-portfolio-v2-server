@@ -10,6 +10,8 @@ import {
   createDeveloperFeedback,
   deleteDeveloperFeedback,
   updateDeveloperFeedback,
+  createRelatedProjectObj,
+  deleteRelatedProjectObj,
 } from "../services/project.service.js";
 import { protect, admin } from "../middleware/auth.middleware.js";
 
@@ -28,4 +30,11 @@ router
 router
   .route("/:id/:feedback_id/edit")
   .put(protect, admin, updateDeveloperFeedback);
+router.post("/:id/related", protect, admin, createRelatedProjectObj);
+router.delete(
+  "/:id/:relatedProjectId/remove",
+  protect,
+  admin,
+  deleteRelatedProjectObj
+);
 export default router;
