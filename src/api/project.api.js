@@ -12,6 +12,7 @@ import {
   updateDeveloperFeedback,
   createRelatedProjectObj,
   deleteRelatedProjectObj,
+  updateRelatedProjectObj,
 } from "../services/project.service.js";
 import { protect, admin } from "../middleware/auth.middleware.js";
 
@@ -37,4 +38,5 @@ router.delete(
   admin,
   deleteRelatedProjectObj
 );
+router.put("/:id/:relatedProjectId/update", protect, admin, updateRelatedProjectObj)
 export default router;

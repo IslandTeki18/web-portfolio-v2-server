@@ -265,7 +265,7 @@ const createRelatedProjectObj = async (req, res) => {
 };
 
 //@desc     Delete a related project object
-//@route    DELETE /api/projects/:id/:related_id/remove
+//@route    DELETE /api/projects/:id/:relatedProjectId/remove
 //@access   Private/Admin
 const deleteRelatedProjectObj = async (req, res) => {
   try {
@@ -274,14 +274,43 @@ const deleteRelatedProjectObj = async (req, res) => {
     if (!project) {
       return res.status(404).json({ message: "Project Not Found" });
     }
-    await project.relatedProjects.id(relatedProjectId).remove()
+    await project.relatedProjects.id(relatedProjectId).remove();
     await project.save();
 
     return res
       .status(200)
       .json({ message: "Related Project Removed", project });
   } catch (error) {
-    console.error("Error creating related project object: ", error);
+    console.error("Error delete a related project object: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+//@desc     Updates a Related Project Object
+//@route    PUT /api/projects/:id/:relatedProjectId/update
+//@access   Private/Admin
+const updateRelatedProjectObj = async (req, res) => {
+  try {
+    const { id, relatedProjectId } = req.params;
+    const { title, projectType, link, tags } = req.body;
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ message: "Project Not Found." });
+    }
+    const relatedProject = await project.relatedProjects.id(relatedProjectId);
+    if (title) relatedProject.title = title || relatedProject.title;
+    if (projectType)
+      relatedProject.projectType = projectType || relatedProject.projectType;
+    if (link) relatedProject.link = link || relatedProject.link;
+    if (tags) relatedProject.tags = tags || relatedProject.tags;
+
+    await project.save();
+
+    return res
+      .status(200)
+      .json({ message: "Related Project Object Updated!", relatedProject });
+  } catch (error) {
+    console.error("Error udpating a related project object: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -298,4 +327,5 @@ export {
   updateDeveloperFeedback,
   createRelatedProjectObj,
   deleteRelatedProjectObj,
+  updateRelatedProjectObj,
 };
