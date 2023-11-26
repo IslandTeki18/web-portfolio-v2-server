@@ -58,9 +58,9 @@ const postNewProject = async (req, res) => {
       user: req.user._id,
       title: "Project Title",
       description: "Project Description",
-      type: "Project Type",
       designer: "Project Designer",
-      designType: "Project Design Type",
+      applicationType: "Project Type",
+      budget: "0",
       client: "Project Client",
       images: [],
       githubUrl: "",
@@ -89,7 +89,7 @@ const putProjectById = async (req, res) => {
     const {
       title,
       description,
-      type,
+      applicationType,
       designer,
       designType,
       client,
@@ -113,7 +113,7 @@ const putProjectById = async (req, res) => {
     project.user = req.user._id;
     project.title = title || project.title;
     project.description = description || project.description;
-    project.type = type || project.type;
+    project.applicationType = applicationType || project.applicationType;
     project.designer = designer || project.designer;
     project.designType = designType || project.designType;
     project.client = client || project.client;
@@ -189,10 +189,10 @@ const deleteDeveloperFeedback = async (req, res) => {
       res.status(404).json({ message: "Project Not Found." });
     }
 
-    project.developerFeedback.id(req.params.feedback_id).remove();
-    project.save();
+    await project.developerFeedback.id(req.params.feedback_id).remove();
+    await project.save();
 
-    return res.send({ msg: "Feedback Removed.", project });
+    return res.send({ message: "Feedback Removed.", project });
   } catch (error) {
     console.error("Error removing developer feedback: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -207,14 +207,14 @@ const updateDeveloperFeedback = async (req, res) => {
     const project = await Project.findById(req.params.id);
 
     if (!project) {
-      res.status(404).json({ message: "Project Not Found." });
+      return res.status(404).json({ message: "Project Not Found." });
     }
 
     const feedbackObj = project.developerFeedback.find(
       ({ id }) => id === req.params.feedback_id
     );
     if (!feedbackObj) {
-      res.status(404).json({ message: "Feedback Object Not Found." });
+      return res.status(404).json({ message: "Feedback Object Not Found." });
     }
 
     if (req.body.title === "") {
@@ -229,7 +229,7 @@ const updateDeveloperFeedback = async (req, res) => {
 
     await project.save();
 
-    return res.send({ msg: "Feedback Updated." });
+    return res.status(200).json({ message: "Feedback Updated." });
   } catch (error) {
     console.error("Error updating developer feedback: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -254,7 +254,7 @@ const createRelatedProjectObj = async (req, res) => {
     };
     project.relatedProjects.push(newRelatedObj);
     await project.save();
-    
+
     return res.status(200).json({ msg: "Related Project Created.", project });
   } catch (error) {
     console.error("Error creating related project object: ", error);

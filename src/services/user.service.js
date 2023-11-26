@@ -2,7 +2,7 @@ import { User } from "../models/user.model.js";
 import generateToken from "../utils/generateToken.js";
 
 //@desc     Get Auth User and Token
-//@route    GET /api/users/login
+//@route    POST /api/users/login
 //@access   Public
 const postAuthUser = async (req, res) => {
   try {
@@ -30,7 +30,7 @@ const postAuthUser = async (req, res) => {
 };
 
 //@desc     Get admin profile
-//@route    GET /api/users/profile
+//@route    GET /api/users/profile/:id
 //@access   Private
 const getAdminProfile = async (req, res) => {
   try {
@@ -54,15 +54,16 @@ const getAdminProfile = async (req, res) => {
 //@access   Private/Admin
 const putUpdateAdmin = async (req, res) => {
   try {
+    const { username, password } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(404).json({message: "User Not Found."})
+      return res.status(404).json({ message: "User Not Found." });
     }
-    
-    user.username = req.body.username || user.username;
 
-    if (req.body.password) {
-      user.password = req.body.password;
+    user.username = username || user.username;
+
+    if (password) {
+      user.password = password;
     }
 
     const updatedAdmin = await user.save();
