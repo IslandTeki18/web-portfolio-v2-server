@@ -93,6 +93,7 @@ const putProjectById = async (req, res) => {
       applicationType,
       designer,
       designType,
+      budget,
       client,
       images,
       tags,
@@ -118,6 +119,7 @@ const putProjectById = async (req, res) => {
     project.applicationType = applicationType || project.applicationType;
     project.designer = designer || project.designer;
     project.designType = designType || project.designType;
+    project.budget = budget || project.budget;
     project.client = client || project.client;
     project.images = images === "" ? [] : images || project.images;
     project.tags = tags || project.tags;
