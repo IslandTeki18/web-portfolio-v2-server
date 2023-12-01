@@ -7,7 +7,7 @@ import { ProjectFeedback } from "../models/project.model.js";
 const getAllProjects = async (req, res) => {
   try {
     const projects = await Project.find({});
-    if (!projects) {
+    if (projects.length <= 0) {
       return res.status(404).json({ message: "No Projects" });
     }
     return res.json(projects);
@@ -89,6 +89,7 @@ const putProjectById = async (req, res) => {
     const {
       title,
       description,
+      projectType,
       applicationType,
       designer,
       designType,
@@ -113,6 +114,7 @@ const putProjectById = async (req, res) => {
     project.user = req.user._id;
     project.title = title || project.title;
     project.description = description || project.description;
+    project.projectType = projectType || project.projectType;
     project.applicationType = applicationType || project.applicationType;
     project.designer = designer || project.designer;
     project.designType = designType || project.designType;
