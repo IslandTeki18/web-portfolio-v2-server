@@ -1,5 +1,6 @@
 import { Project } from "../models/project.model.js";
 import { ProjectFeedback } from "../models/project.model.js";
+import { breakStringDownToArray } from "../utils/helperFunctions.js";
 
 //@desc     Get all project
 //@route    GET /api/projects
@@ -97,10 +98,10 @@ const putProjectById = async (req, res) => {
       client,
       images,
       tags,
+      techStack,
       trelloUrl,
       githubUrl,
       projectUrl,
-      techStack,
       developerFeedback,
       relatedProjects,
       status,
@@ -122,21 +123,29 @@ const putProjectById = async (req, res) => {
     project.budget = budget || project.budget;
     project.client = client || project.client;
     project.images = images === "" ? [] : images || project.images;
-    project.tags = tags || project.tags;
-    project.trelloUrl = trelloUrl || trelloUrl;
+    project.trelloUrl = trelloUrl || project.trelloUrl;
     project.githubUrl = githubUrl || project.githubUrl;
     project.projectUrl = projectUrl || project.projectUrl;
-    project.techStack = techStack || project.techStack;
     project.developerFeedback = developerFeedback || project.developerFeedback;
     project.relatedProjects = relatedProjects || project.relatedProjects;
     project.status = status || project.status;
+
+    project.tags =
+      tags === "" ? [] : breakStringDownToArray(tags) || project.tags;
+    project.techStack =
+      techStack === ""
+        ? []
+        : breakStringDownToArray(techStack) || project.techStack;
 
     await project.save();
 
     return res.json(project);
   } catch (error) {
     console.error("Error updating project: ", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({
+      message: "Internal server error when updating project",
+      error: error.message,
+    });
   }
 };
 
