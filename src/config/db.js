@@ -4,7 +4,7 @@ const connectDB = async () => {
   try {
     mongoose.set("strictQuery", false);
 
-    const conn = await mongoose.connect(process.env.MONGO_URI_TEST, {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
       writeConcern: 'majority',
       retryWrites: true
     });
