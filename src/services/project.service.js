@@ -183,7 +183,7 @@ const createDeveloperFeedback = async (req, res) => {
     });
 
     project.developerFeedback.push(newFeedback);
-    project.save();
+    await project.save();
 
     return res.json(project);
   } catch (error) {
