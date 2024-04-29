@@ -4,9 +4,11 @@ const connectDB = async () => {
   try {
     mongoose.set("strictQuery", false);
 
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      writeConcern: 'majority',
-      retryWrites: true
+    const mongoURI = process.env.MONGO_URI || "";
+
+    const conn = await mongoose.connect(mongoURI, {
+      writeConcern: "majority",
+      retryWrites: true,
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
