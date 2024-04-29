@@ -1,5 +1,7 @@
 import path from "path";
 import multer from "multer";
+import multerS3 from "multer-s3";
+import aws from "aws-sdk";
 
 const checkFileType = (file, cb) => {
   // Allowed extension
@@ -16,15 +18,19 @@ const checkFileType = (file, cb) => {
   }
 };
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, "uploads/");
+const storage = multerS3({
+  s3: new aws.S3({
+    accessKeyId: process.env.AWS_S3_ACCESSKEYID,
+    secretAccessKey: process.env.AWS_S3_SECRETACCESSKEY,
+    region: process.env.AWS_S3_REGION,
+  }),
+  bucket: "webportfoliobucket",
+  acl: "public-read",
+  metadata: function (req, file, cb) {
+    cb(null, { fieldName: file.fieldname });
   },
-  filename(req, file, cb) {
-    cb(
-      null,
-      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`
-    );
+  key: function (req, file, cb) {
+    cb(null, `project/${file.originalname}`);
   },
 });
 

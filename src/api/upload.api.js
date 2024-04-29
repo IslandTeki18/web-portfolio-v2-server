@@ -4,6 +4,6 @@ import { uploadProductImage } from "../services/upload.service.js";
 
 const router = express.Router();
 
-router.route("/").post(upload.single("project-image"), uploadProductImage);
+router.route("/:id").post(upload.array("images", 5), uploadProductImage);
 
 export default router;
