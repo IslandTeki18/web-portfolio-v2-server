@@ -123,9 +123,9 @@ const putProjectById = async (req, res) => {
     project.budget = budget || project.budget;
     project.client = client || project.client;
     project.images = images === "" ? [] : images || project.images;
-    project.trelloUrl = trelloUrl || project.trelloUrl;
-    project.githubUrl = githubUrl || project.githubUrl;
-    project.projectUrl = projectUrl || project.projectUrl;
+    project.trelloUrl = trelloUrl;
+    project.githubUrl = githubUrl;
+    project.projectUrl = projectUrl;
     project.developerFeedback = developerFeedback || project.developerFeedback;
     project.relatedProjects = relatedProjects || project.relatedProjects;
     project.status = status || project.status;
