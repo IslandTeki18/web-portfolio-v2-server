@@ -12,7 +12,8 @@
   "author": "Landon McKell",
   "license": "MIT",
   "dependencies": {
-    "aws-sdk": "^2.1031.0",
+    "@aws-sdk/client-s3": "^3.577.0",
+    "@aws-sdk/s3-request-presigner": "^3.582.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
@@ -21,7 +22,6 @@
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.13",
     "multer": "^1.4.3",
-    "multer-s3": "^2.10.0",
     "path": "^0.12.7"
   },
   "devDependencies": {
