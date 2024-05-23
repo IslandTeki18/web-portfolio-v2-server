@@ -1,6 +1,20 @@
 import { Project } from "../models/project.model.js";
 import { ProjectFeedback } from "../models/project.model.js";
 import { breakStringDownToArray } from "../utils/helperFunctions.js";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const s3 = new S3Client({
+  region: process.env.AWS_S3_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_S3_ACCESSKEYID,
+    secretAccessKey: process.env.AWS_S3_SECRETACCESSKEY,
+  },
+});
+
 
 //@desc     Get all project
 //@route    GET /api/projects
@@ -43,10 +57,20 @@ const getProjectById = async (req, res) => {
     if (!project) {
       return res.status(404).json({ message: "Project Not Found!" });
     }
+    for (let image of project.images) {
+      const getObjectParams = {
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: image,
+      };
+      const getCommand = new GetObjectCommand(getObjectParams);
+      await getSignedUrl(s3, getCommand, { expiresIn: 3600 });
+    }
+
     return res.json(project);
   } catch (error) {
-    console.error("Error getting specific project: ", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ message: "Error getting project", error: error.message });
   }
 };
 

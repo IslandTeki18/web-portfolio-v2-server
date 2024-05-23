@@ -1,13 +1,17 @@
 import { Project } from "../models/project.model.js";
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+function randomImageName() {
+  let randomNumberString = "";
+  for (let i = 0; i < 16; i++) {
+    const randomDigit = Math.floor(Math.random() * 10); // Generates a random number between 0 and 9
+    randomNumberString += randomDigit.toString();
+  }
+  return randomNumberString;
+}
 
 const s3 = new S3Client({
   region: process.env.AWS_S3_REGION,
@@ -23,24 +27,14 @@ const s3 = new S3Client({
 export const uploadProductImage = async (req, res) => {
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: req.file.originalname,
+    Key: randomImageName(),
     Body: req.file.buffer,
     ContentType: req.file.mimetype,
   };
-  const getObjectParams = {
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: req.file.originalname,
-  };
-  
   const project = await Project.findById(req.params.id);
   const command = new PutObjectCommand(params);
-  const getCommand = new GetObjectCommand(getObjectParams);
-  const url = await getSignedUrl(s3, getCommand, { expiresIn: 3600 });
-  try {
-    await s3.send(command);
-  } catch (error) {
-    console.error(error);
-  }
+  await s3.send(command);
+
   if (project) {
     if (project.images) {
       project.images = project.images.concat(url);
