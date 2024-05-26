@@ -7,6 +7,7 @@ import {
   postNewProject,
   putProjectById,
   deleteProjectById,
+  deleteProjectImage,
   createDeveloperFeedback,
   deleteDeveloperFeedback,
   updateDeveloperFeedback,
@@ -22,8 +23,9 @@ router
   .route("/:id")
   .get(getProjectById)
   .delete(protect, admin, deleteProjectById)
-  .put(protect, admin, putProjectById);
-
+  .put(protect, admin, putProjectById)
+  
+router.route("/:id/image").delete(protect, admin, deleteProjectImage);
 router.route("/:id/feedback").post(protect, admin, createDeveloperFeedback);
 router
   .route("/:id/:feedback_id")
@@ -38,5 +40,10 @@ router.delete(
   admin,
   deleteRelatedProjectObj
 );
-router.put("/:id/:relatedProjectId/update", protect, admin, updateRelatedProjectObj)
+router.put(
+  "/:id/:relatedProjectId/update",
+  protect,
+  admin,
+  updateRelatedProjectObj
+);
 export default router;

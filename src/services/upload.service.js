@@ -25,22 +25,22 @@ const s3 = new S3Client({
 //@route    POST /api/upload/:id
 //@access   Private/Admin
 export const uploadProductImage = async (req, res) => {
+  const imageName = randomImageName();
   const params = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: randomImageName(),
+    Key: imageName,
     Body: req.file.buffer,
     ContentType: req.file.mimetype,
   };
   const project = await Project.findById(req.params.id);
+  // Send to AWS S3
   const command = new PutObjectCommand(params);
   await s3.send(command);
 
   if (project) {
-    if (project.images) {
-      project.images = project.images.concat(url);
-    }
+    project.images = [imageName];
     await project.save();
-    res.status(201).json({ message: "Image uploaded successfully" });
+    res.status(201).json(project);
   } else {
     res.status(404);
     throw new Error("Project not found");

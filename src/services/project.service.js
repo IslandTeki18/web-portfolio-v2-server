@@ -15,7 +15,6 @@ const s3 = new S3Client({
   },
 });
 
-
 //@desc     Get all project
 //@route    GET /api/projects
 //@access   Public
@@ -57,15 +56,18 @@ const getProjectById = async (req, res) => {
     if (!project) {
       return res.status(404).json({ message: "Project Not Found!" });
     }
-    for (let image of project.images) {
-      const getObjectParams = {
-        Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: image,
-      };
-      const getCommand = new GetObjectCommand(getObjectParams);
-      await getSignedUrl(s3, getCommand, { expiresIn: 3600 });
-    }
+    if (project.images) {
+      for (let image of project.images) {
+        const getObjectParams = {
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Key: image,
+        };
+        const getCommand = new GetObjectCommand(getObjectParams);
+        const url = await getSignedUrl(s3, getCommand, { expiresIn: 60 });
 
+        project.images = [url];
+      }
+    }
     return res.json(project);
   } catch (error) {
     return res
@@ -146,7 +148,6 @@ const putProjectById = async (req, res) => {
     project.designType = designType || project.designType;
     project.budget = budget || project.budget;
     project.client = client || project.client;
-    project.images = images === "" ? [] : images || project.images;
     project.trelloUrl = trelloUrl;
     project.githubUrl = githubUrl;
     project.projectUrl = projectUrl;
@@ -170,6 +171,22 @@ const putProjectById = async (req, res) => {
       message: "Internal server error when updating project",
       error: error.message,
     });
+  }
+};
+//@desc     Remove Project Image
+//@route    DELETE /api/projects/:id
+//@access   Private/Admin
+const deleteProjectImage = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: "Project Not Found." });
+    }
+    project.images = [];
+    await project.save();
+  } catch (error) {
+    console.error("Error deleting project image: ", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -358,6 +375,7 @@ export {
   postNewProject,
   putProjectById,
   getProjectById,
+  deleteProjectImage,
   deleteProjectById,
   createDeveloperFeedback,
   deleteDeveloperFeedback,
