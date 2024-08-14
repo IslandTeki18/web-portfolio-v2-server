@@ -32,13 +32,27 @@ const getAllProjects = async (req, res) => {
 };
 
 //@desc     Get a limited of 6 projects
-//@route    GET /api/projects
+//@route    GET /api/projects/limited
 //@access   Public
 const getLimitedProjects = async (req, res) => {
   try {
     const projects = await Project.find({}).sort({ createdAt: -1 }).limit(6);
     if (!projects) {
       return res.status(404).json({ message: "No Projects" });
+    }
+    for (var i = 0; i <= projects.length; i++) {
+      if (projects[i].images !== "") {
+        for (let image of project.images) {
+          const getObjectParams = {
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: image,
+          };
+          const getCommand = new GetObjectCommand(getObjectParams);
+          const url = getSignedUrl(s3, getCommand, { expiresIn: 60 });
+
+          project.images = [url];
+        }
+      }
     }
     return res.status(200).json(projects);
   } catch (error) {

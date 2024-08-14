@@ -22,7 +22,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/upload", uploadRoutes);
-app.use("api/blogs", blogRoutes);
+// app.use("/api/blogs", blogRoutes);
 
 const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
