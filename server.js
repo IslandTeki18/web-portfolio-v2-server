@@ -6,22 +6,23 @@ import connectDB from "./src/config/db.js";
 import { notFound, errorHandler } from "./src/middleware/error.middleware.js";
 
 import projectRoutes from "./src/api/project.api.js";
+import userRoutes from "./src/api/user.api.js";
 import contactRoutes from "./src/api/contact.api.js";
 import blogRoutes from "./src/api/blog.api.js";
-import userRoutes from "./src/api/user.api.js";
-import uploadRoutes from "./src/api/upload.api.js";
 
 dotenv.config();
 connectDB();
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN,
+}));
 
 app.use("/api/projects", projectRoutes);
-app.use("/api/contacts", contactRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/upload", uploadRoutes);
+app.use("/api/contacts", contactRoutes);
+// app.use("/api/upload", uploadRoutes);
 // app.use("/api/blogs", blogRoutes);
 
 const __dirname = path.resolve();

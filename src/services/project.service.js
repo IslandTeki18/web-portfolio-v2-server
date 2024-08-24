@@ -1,9 +1,14 @@
 import { Project } from "../models/project.model.js";
 import { ProjectFeedback } from "../models/project.model.js";
 import { breakStringDownToArray } from "../utils/helperFunctions.js";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
+import { Readable } from "stream";
 
 dotenv.config();
 
@@ -14,6 +19,23 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_S3_SECRETACCESSKEY,
   },
 });
+
+async function uploadFileToS3(file) {
+  const uploadParams = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: `projects/${Date.now()}-${file.originalname}`,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+  };
+
+  try {
+    await s3.send(new PutObjectCommand(uploadParams));
+    return `https://${uploadParams.Bucket}.s3.amazonaws.com/${uploadParams.Key}`;
+  } catch (error) {
+    console.error("Error uploading file to S3:", error);
+    throw error;
+  }
+}
 
 //@desc     Get all project
 //@route    GET /api/projects
@@ -95,30 +117,58 @@ const getProjectById = async (req, res) => {
 //@access   Private/Admin
 const postNewProject = async (req, res) => {
   try {
+    const {
+      title,
+      description,
+      projectType,
+      applicationType,
+      status,
+      isPublic,
+      trelloUrl,
+      githubUrl,
+      projectUrl,
+      budget,
+      designer,
+      client,
+      techStack,
+      tags,
+    } = req.body;
+
+    // Handle file uploads
+    const uploadedFiles = req.files;
+    let imageUrls = [];
+
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      // Upload each file to S3 and collect the URLs
+      imageUrls = await Promise.all(uploadedFiles.map(uploadFileToS3));
+    }
+
     const project = new Project({
       user: req.user._id,
-      title: "Project Title",
-      description: "Project Description",
-      designer: "Project Designer",
-      applicationType: "Project Type",
-      budget: "0",
-      client: "Project Client",
-      images: [],
-      githubUrl: "",
-      projectUrl: "",
-      trelloUrl: "",
-      tags: [],
-      techStack: [],
-      developerFeedback: [],
-      relatedProjects: [],
-      status: "Not Live",
+      title,
+      description,
+      projectType,
+      applicationType,
+      status,
+      isPublic,
+      trelloUrl,
+      githubUrl,
+      projectUrl,
+      budget,
+      designer,
+      client,
+      techStack: techStack === "" ? [] : breakStringDownToArray(techStack),
+      tags: tags === "" ? [] : breakStringDownToArray(tags),
+      images: imageUrls, // Store the S3 URLs of the uploaded images
     });
 
     const createdProject = await project.save();
     return res.status(201).json(createdProject);
   } catch (error) {
     console.error("Error creating project: ", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
 

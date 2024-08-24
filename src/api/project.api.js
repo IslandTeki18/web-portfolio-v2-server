@@ -16,8 +16,9 @@ import {
   updateRelatedProjectObj,
 } from "../services/project.service.js";
 import { protect, admin } from "../middleware/auth.middleware.js";
+import { upload } from "../middleware/upload.middleware.js";
 
-router.route("/").get(getAllProjects).post(protect, admin, postNewProject);
+router.route("/").get(getAllProjects).post(protect, admin, upload.array('images'), postNewProject);
 router.route("/limited").get(getLimitedProjects);
 router
   .route("/:id")

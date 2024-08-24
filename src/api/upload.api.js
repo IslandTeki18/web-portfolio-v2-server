@@ -1,9 +1,9 @@
-import express from "express";
-import { upload } from "../middleware/upload.middleware.js";
-import { uploadProductImage } from "../services/upload.service.js";
+// import express from "express";
+// import { upload } from "../middleware/upload.middleware.js";
+// import { uploadProjectImage } from "../services/upload.service.js";
 
-const router = express.Router();
+// const router = express.Router();
 
-router.route("/:id").post(upload.single("image"), uploadProductImage);
+// router.route("/").post(upload.array("images"), uploadProjectImage);
 
-export default router;
+// export default router;
