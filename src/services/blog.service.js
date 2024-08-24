@@ -26,10 +26,18 @@ const getAllBlogPosts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search || "";
 
-    const blogPosts = await Blog.find({}).skip(skip).limit(limit);
+    const query = {
+      $or: [
+        { title: { $regex: search, $options: "i" } },
+        { content: { $regex: search, $options: "i" } },
+      ],
+    };
 
-    const total = await Blog.countDocuments({});
+    const blogPosts = await Blog.find(query).skip(skip).limit(limit);
+
+    const total = await Blog.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
 
     return res.json({
