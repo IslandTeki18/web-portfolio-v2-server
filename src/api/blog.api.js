@@ -18,4 +18,5 @@ router
   .delete(protect, admin, deleteBlogPost);
 
 router.route("/:id/comment").post(addCommentToBlogPost);
+
 export default router;

@@ -33,7 +33,7 @@ app.use(limiter);
 app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/contacts", contactRoutes);
-// app.use("/api/blogs", blogRoutes);
+app.use("/api/blogs", blogRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running");
