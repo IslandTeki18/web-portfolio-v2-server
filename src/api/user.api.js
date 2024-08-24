@@ -5,9 +5,9 @@ import {
   postAuthUser,
   putUpdateAdmin,
 } from "../services/user.service.js";
-import { protect, admin } from "../middleware/auth.middleware.js";
+import { protect, admin, authLimiter } from "../middleware/auth.middleware.js";
 
-router.post("/login", postAuthUser);
+router.post("/login", authLimiter, postAuthUser);
 router
   .route("/settings")
   .put(protect, admin, putUpdateAdmin)
