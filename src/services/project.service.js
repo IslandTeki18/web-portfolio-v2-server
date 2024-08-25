@@ -5,10 +5,10 @@ import {
   S3Client,
   GetObjectCommand,
   PutObjectCommand,
+  ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
-import { Readable } from "stream";
 
 dotenv.config();
 
@@ -20,22 +20,40 @@ const s3 = new S3Client({
   },
 });
 
-async function uploadFileToS3(file) {
-  const uploadParams = {
+async function uploadFileToS3(file, title) {
+  const key = `${title}/${file.originalname}`;
+  const command = new PutObjectCommand({
     Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: `projects/${Date.now()}-${file.originalname}`,
+    Key: key,
     Body: file.buffer,
     ContentType: file.mimetype,
-  };
-
+  });
   try {
-    await s3.send(new PutObjectCommand(uploadParams));
-    return `https://${uploadParams.Bucket}.s3.amazonaws.com/${uploadParams.Key}`;
+    await s3.send(command);
+    return { key };
   } catch (error) {
     console.error("Error uploading file to S3:", error);
     throw error;
   }
 }
+
+const getPresignedUrls = async (imageKeys) => {
+  try {
+    const presignedUrls = await Promise.all(
+      imageKeys.map((key) => {
+        const getCommand = new GetObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Key: key,
+        });
+        return getSignedUrl(s3, getCommand, { expiresIn: 900 });
+      })
+    );
+    return presignedUrls;
+  } catch (error) {
+    console.error("Error getting signed URLs: ", error);
+    return { error };
+  }
+};
 
 //@desc     Get all project
 //@route    GET /api/projects
@@ -56,27 +74,33 @@ const getAllProjects = async (req, res) => {
 //@desc     Get a limited of 6 projects
 //@route    GET /api/projects/limited
 //@access   Public
-const getLimitedProjects = async (req, res) => {
+const getLimitedProjects = async (_, res) => {
   try {
     const projects = await Project.find({}).sort({ createdAt: -1 }).limit(6);
-    if (!projects) {
+    if (!projects || projects.length === 0) {
       return res.status(404).json({ message: "No Projects" });
     }
-    for (var i = 0; i <= projects.length; i++) {
-      if (projects[i].images !== "") {
-        for (let image of project.images) {
-          const getObjectParams = {
-            Bucket: process.env.AWS_S3_BUCKET_NAME,
-            Key: image,
-          };
-          const getCommand = new GetObjectCommand(getObjectParams);
-          const url = getSignedUrl(s3, getCommand, { expiresIn: 60 });
 
-          project.images = [url];
-        }
+    for (var i = 0; i < projects.length; i++) {
+      if (projects[i].images !== undefined) {
+        console.log(projects[i].title);
+
+        // Get the image keys from s3 for the project
+        const command = new ListObjectsV2Command({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Prefix: projects[i].title,
+        });
+        const { Contents = [] } = await s3.send(command);
+        const imageKeys = Contents.map(({ Key }) => Key);
+
+        // Get the presigned URLs for the images
+        const presignedUrls = await getPresignedUrls(imageKeys);
+        projects[i].images = presignedUrls;
       }
+      // console.log(projects[i].images);
     }
     return res.status(200).json(projects);
+    // return res.status(200).json(updatedProjects);
   } catch (error) {
     console.error("Error getting limited projects: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -93,6 +117,7 @@ const getProjectById = async (req, res) => {
       return res.status(404).json({ message: "Project Not Found!" });
     }
     if (project.images) {
+      const signedUrls = [];
       for (let image of project.images) {
         const getObjectParams = {
           Bucket: process.env.AWS_S3_BUCKET_NAME,
@@ -101,8 +126,10 @@ const getProjectById = async (req, res) => {
         const getCommand = new GetObjectCommand(getObjectParams);
         const url = await getSignedUrl(s3, getCommand, { expiresIn: 60 });
 
-        project.images = [url];
+        signedUrls.push(url);
       }
+      project.images = signedUrls;
+      await project.save();
     }
     return res.json(project);
   } catch (error) {
@@ -140,7 +167,12 @@ const postNewProject = async (req, res) => {
 
     if (uploadedFiles && uploadedFiles.length > 0) {
       // Upload each file to S3 and collect the URLs
-      imageUrls = await Promise.all(uploadedFiles.map(uploadFileToS3));
+      imageUrls = await Promise.all(
+        uploadedFiles.map(async (file) => {
+          const { key } = await uploadFileToS3(file, title);
+          return key;
+        })
+      );
     }
 
     const project = new Project({
@@ -159,7 +191,7 @@ const postNewProject = async (req, res) => {
       client,
       techStack: techStack === "" ? [] : breakStringDownToArray(techStack),
       tags: tags === "" ? [] : breakStringDownToArray(tags),
-      images: imageUrls, // Store the S3 URLs of the uploaded images
+      images: imageUrls,
     });
 
     const createdProject = await project.save();
