@@ -58,7 +58,7 @@ const getPresignedUrls = async (imageKeys) => {
 //@desc     Get all project
 //@route    GET /api/projects
 //@access   Public
-const getAllProjects = async (req, res) => {
+const getAllProjects = async (_, res) => {
   try {
     const projects = await Project.find({});
     if (projects.length <= 0) {
@@ -83,8 +83,6 @@ const getLimitedProjects = async (_, res) => {
 
     for (var i = 0; i < projects.length; i++) {
       if (projects[i].images !== undefined) {
-        console.log(projects[i].title);
-
         // Get the image keys from s3 for the project
         const command = new ListObjectsV2Command({
           Bucket: process.env.AWS_S3_BUCKET_NAME,
@@ -117,19 +115,14 @@ const getProjectById = async (req, res) => {
       return res.status(404).json({ message: "Project Not Found!" });
     }
     if (project.images) {
-      const signedUrls = [];
-      for (let image of project.images) {
-        const getObjectParams = {
-          Bucket: process.env.AWS_S3_BUCKET_NAME,
-          Key: image,
-        };
-        const getCommand = new GetObjectCommand(getObjectParams);
-        const url = await getSignedUrl(s3, getCommand, { expiresIn: 60 });
-
-        signedUrls.push(url);
-      }
-      project.images = signedUrls;
-      await project.save();
+      const command = new ListObjectsV2Command({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Prefix: project.title,
+      });
+      const { Contents = [] } = await s3.send(command);
+      const imageKeys = Contents.map(({ Key }) => Key);
+      const presignedUrls = await getPresignedUrls(imageKeys);
+      project.images = presignedUrls;
     }
     return res.json(project);
   } catch (error) {
@@ -218,7 +211,6 @@ const putProjectById = async (req, res) => {
       designType,
       budget,
       client,
-      images,
       tags,
       techStack,
       trelloUrl,
