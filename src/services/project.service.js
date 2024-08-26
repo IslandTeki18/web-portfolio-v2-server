@@ -64,6 +64,21 @@ const getAllProjects = async (_, res) => {
     if (projects.length <= 0) {
       return res.status(404).json({ message: "No Projects" });
     }
+    for (var i = 0; i < projects.length; i++) {
+      if (projects[i].images !== undefined) {
+        // Get the image keys from s3 for the project
+        const command = new ListObjectsV2Command({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Prefix: projects[i].title,
+        });
+        const { Contents = [] } = await s3.send(command);
+        const imageKeys = Contents.map(({ Key }) => Key);
+
+        // Get the presigned URLs for the images
+        const presignedUrls = await getPresignedUrls(imageKeys);
+        projects[i].images = presignedUrls;
+      }
+    }
     return res.json(projects);
   } catch (error) {
     console.error("Error getting projects: ", error);
@@ -95,7 +110,6 @@ const getLimitedProjects = async (_, res) => {
         const presignedUrls = await getPresignedUrls(imageKeys);
         projects[i].images = presignedUrls;
       }
-      // console.log(projects[i].images);
     }
     return res.status(200).json(projects);
     // return res.status(200).json(updatedProjects);
