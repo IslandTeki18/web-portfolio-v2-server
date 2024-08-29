@@ -241,6 +241,20 @@ const putProjectById = async (req, res) => {
       return res.status(404).json({ message: "Project Not Found." });
     }
 
+    // Handle file uploads
+    const uploadedFiles = req.files;
+    let imageUrls = [];
+
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      // Upload each file to S3 and collect the URLs
+      imageUrls = await Promise.all(
+        uploadedFiles.map(async (file) => {
+          const { key } = await uploadFileToS3(file, title);
+          return key;
+        })
+      );
+    }
+
     project.user = req.user._id;
     project.title = title || project.title;
     project.description = description || project.description;
@@ -250,31 +264,29 @@ const putProjectById = async (req, res) => {
     project.designType = designType || project.designType;
     project.budget = budget || project.budget;
     project.client = client || project.client;
-    project.trelloUrl = trelloUrl;
-    project.githubUrl = githubUrl;
-    project.projectUrl = projectUrl;
+    project.tags = tags || project.tags;
+    project.techStack = techStack || project.techStack;
+    project.trelloUrl = trelloUrl || project.trelloUrl;
+    project.githubUrl = githubUrl || project.githubUrl;
+    project.projectUrl = projectUrl || project.projectUrl;
     project.developerFeedback = developerFeedback || project.developerFeedback;
     project.relatedProjects = relatedProjects || project.relatedProjects;
     project.status = status || project.status;
-
-    project.tags =
-      tags === "" ? [] : breakStringDownToArray(tags) || project.tags;
-    project.techStack =
-      techStack === ""
-        ? []
-        : breakStringDownToArray(techStack) || project.techStack;
+    project.images = imageUrls.length > 0 ? imageUrls : project.images;
 
     await project.save();
 
-    return res.json(project);
+    return res
+      .status(200)
+      .json({ message: "Project Updated Successfully", project });
   } catch (error) {
     console.error("Error updating project: ", error);
-    return res.status(500).json({
-      message: "Internal server error when updating project",
-      error: error.message,
-    });
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 //@desc     Remove Project Image
 //@route    DELETE /api/projects/:id
 //@access   Private/Admin

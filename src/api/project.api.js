@@ -18,14 +18,17 @@ import {
 import { protect, admin } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/upload.middleware.js";
 
-router.route("/").get(getAllProjects).post(protect, admin, upload.array('images'), postNewProject);
+router
+  .route("/")
+  .get(getAllProjects)
+  .post(protect, admin, upload.array("images"), postNewProject);
 router.route("/limited").get(getLimitedProjects);
 router
   .route("/:id")
   .get(getProjectById)
   .delete(protect, admin, deleteProjectById)
-  .put(protect, admin, putProjectById)
-  
+  .put(protect, admin, upload.array("images"), putProjectById);
+
 router.route("/:id/image").delete(protect, admin, deleteProjectImage);
 router.route("/:id/feedback").post(protect, admin, createDeveloperFeedback);
 router
