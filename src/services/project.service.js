@@ -437,12 +437,11 @@ const createRelatedProjectObj = async (req, res) => {
 //@access   Private/Admin
 const deleteRelatedProjectObj = async (req, res) => {
   try {
-    const { id, relatedProjectId } = req.params;
-    const project = await Project.findById(id);
+    const project = await Project.findById(req.params.id);
     if (!project) {
       return res.status(404).json({ message: "Project Not Found" });
     }
-    await project.relatedProjects.id(relatedProjectId).remove();
+    await project.relatedProjects.id(req.params.relatedProjectId).remove();
     await project.save();
 
     return res

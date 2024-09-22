@@ -18,6 +18,7 @@ import {
 import { protect, admin } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/upload.middleware.js";
 
+// Project routes
 router
   .route("/")
   .get(getAllProjects)
@@ -28,8 +29,9 @@ router
   .get(getProjectById)
   .delete(protect, admin, deleteProjectById)
   .put(protect, admin, upload.array("images"), putProjectById);
-
 router.route("/:id/image").delete(protect, admin, deleteProjectImage);
+
+// Developer feedback
 router.route("/:id/feedback").post(protect, admin, createDeveloperFeedback);
 router
   .route("/:id/:feedback_id")
@@ -37,6 +39,8 @@ router
 router
   .route("/:id/:feedback_id/edit")
   .put(protect, admin, updateDeveloperFeedback);
+
+// Related projects
 router.post("/:id/related", protect, admin, createRelatedProjectObj);
 router.delete(
   "/:id/:relatedProjectId/remove",
