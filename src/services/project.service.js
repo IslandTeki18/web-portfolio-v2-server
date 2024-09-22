@@ -1,7 +1,12 @@
 import { Project } from "../models/project.model.js";
 import { ProjectFeedback } from "../models/project.model.js";
 import { breakStringDownToArray } from "../utils/helperFunctions.js";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+  ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
 
@@ -15,14 +20,64 @@ const s3 = new S3Client({
   },
 });
 
+async function uploadFileToS3(file, title) {
+  const key = `${title}/${file.originalname}`;
+  const command = new PutObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: key,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+  });
+  try {
+    await s3.send(command);
+    return { key };
+  } catch (error) {
+    console.error("Error uploading file to S3:", error);
+    throw error;
+  }
+}
+
+const getPresignedUrls = async (imageKeys) => {
+  try {
+    const presignedUrls = await Promise.all(
+      imageKeys.map((key) => {
+        const getCommand = new GetObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Key: key,
+        });
+        return getSignedUrl(s3, getCommand, { expiresIn: 900 });
+      })
+    );
+    return presignedUrls;
+  } catch (error) {
+    console.error("Error getting signed URLs: ", error);
+    return { error };
+  }
+};
+
 //@desc     Get all project
 //@route    GET /api/projects
 //@access   Public
-const getAllProjects = async (req, res) => {
+const getAllProjects = async (_, res) => {
   try {
     const projects = await Project.find({});
     if (projects.length <= 0) {
       return res.status(404).json({ message: "No Projects" });
+    }
+    for (var i = 0; i < projects.length; i++) {
+      if (projects[i].images !== undefined) {
+        // Get the image keys from s3 for the project
+        const command = new ListObjectsV2Command({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Prefix: projects[i].title,
+        });
+        const { Contents = [] } = await s3.send(command);
+        const imageKeys = Contents.map(({ Key }) => Key);
+
+        // Get the presigned URLs for the images
+        const presignedUrls = await getPresignedUrls(imageKeys);
+        projects[i].images = presignedUrls;
+      }
     }
     return res.json(projects);
   } catch (error) {
@@ -34,27 +89,30 @@ const getAllProjects = async (req, res) => {
 //@desc     Get a limited of 6 projects
 //@route    GET /api/projects/limited
 //@access   Public
-const getLimitedProjects = async (req, res) => {
+const getLimitedProjects = async (_, res) => {
   try {
     const projects = await Project.find({}).sort({ createdAt: -1 }).limit(6);
-    if (!projects) {
+    if (!projects || projects.length === 0) {
       return res.status(404).json({ message: "No Projects" });
     }
-    for (var i = 0; i <= projects.length; i++) {
-      if (projects[i].images !== "") {
-        for (let image of project.images) {
-          const getObjectParams = {
-            Bucket: process.env.AWS_S3_BUCKET_NAME,
-            Key: image,
-          };
-          const getCommand = new GetObjectCommand(getObjectParams);
-          const url = getSignedUrl(s3, getCommand, { expiresIn: 60 });
 
-          project.images = [url];
-        }
+    for (var i = 0; i < projects.length; i++) {
+      if (projects[i].images !== undefined) {
+        // Get the image keys from s3 for the project
+        const command = new ListObjectsV2Command({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Prefix: projects[i].title,
+        });
+        const { Contents = [] } = await s3.send(command);
+        const imageKeys = Contents.map(({ Key }) => Key);
+
+        // Get the presigned URLs for the images
+        const presignedUrls = await getPresignedUrls(imageKeys);
+        projects[i].images = presignedUrls;
       }
     }
     return res.status(200).json(projects);
+    // return res.status(200).json(updatedProjects);
   } catch (error) {
     console.error("Error getting limited projects: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -71,16 +129,14 @@ const getProjectById = async (req, res) => {
       return res.status(404).json({ message: "Project Not Found!" });
     }
     if (project.images) {
-      for (let image of project.images) {
-        const getObjectParams = {
-          Bucket: process.env.AWS_S3_BUCKET_NAME,
-          Key: image,
-        };
-        const getCommand = new GetObjectCommand(getObjectParams);
-        const url = await getSignedUrl(s3, getCommand, { expiresIn: 60 });
-
-        project.images = [url];
-      }
+      const command = new ListObjectsV2Command({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Prefix: project.title,
+      });
+      const { Contents = [] } = await s3.send(command);
+      const imageKeys = Contents.map(({ Key }) => Key);
+      const presignedUrls = await getPresignedUrls(imageKeys);
+      project.images = presignedUrls;
     }
     return res.json(project);
   } catch (error) {
@@ -95,30 +151,63 @@ const getProjectById = async (req, res) => {
 //@access   Private/Admin
 const postNewProject = async (req, res) => {
   try {
+    const {
+      title,
+      description,
+      projectType,
+      applicationType,
+      status,
+      isPublic,
+      trelloUrl,
+      githubUrl,
+      projectUrl,
+      budget,
+      designer,
+      client,
+      techStack,
+      tags,
+    } = req.body;
+
+    // Handle file uploads
+    const uploadedFiles = req.files;
+    let imageUrls = [];
+
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      // Upload each file to S3 and collect the URLs
+      imageUrls = await Promise.all(
+        uploadedFiles.map(async (file) => {
+          const { key } = await uploadFileToS3(file, title);
+          return key;
+        })
+      );
+    }
+
     const project = new Project({
       user: req.user._id,
-      title: "Project Title",
-      description: "Project Description",
-      designer: "Project Designer",
-      applicationType: "Project Type",
-      budget: "0",
-      client: "Project Client",
-      images: [],
-      githubUrl: "",
-      projectUrl: "",
-      trelloUrl: "",
-      tags: [],
-      techStack: [],
-      developerFeedback: [],
-      relatedProjects: [],
-      status: "Not Live",
+      title,
+      description,
+      projectType,
+      applicationType,
+      status,
+      isPublic,
+      trelloUrl,
+      githubUrl,
+      projectUrl,
+      budget,
+      designer,
+      client,
+      techStack: techStack === "" ? [] : breakStringDownToArray(techStack),
+      tags: tags === "" ? [] : breakStringDownToArray(tags),
+      images: imageUrls,
     });
 
     const createdProject = await project.save();
     return res.status(201).json(createdProject);
   } catch (error) {
     console.error("Error creating project: ", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
 
@@ -136,7 +225,6 @@ const putProjectById = async (req, res) => {
       designType,
       budget,
       client,
-      images,
       tags,
       techStack,
       trelloUrl,
@@ -153,6 +241,20 @@ const putProjectById = async (req, res) => {
       return res.status(404).json({ message: "Project Not Found." });
     }
 
+    // Handle file uploads
+    const uploadedFiles = req.files;
+    let imageUrls = [];
+
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      // Upload each file to S3 and collect the URLs
+      imageUrls = await Promise.all(
+        uploadedFiles.map(async (file) => {
+          const { key } = await uploadFileToS3(file, title);
+          return key;
+        })
+      );
+    }
+
     project.user = req.user._id;
     project.title = title || project.title;
     project.description = description || project.description;
@@ -162,31 +264,29 @@ const putProjectById = async (req, res) => {
     project.designType = designType || project.designType;
     project.budget = budget || project.budget;
     project.client = client || project.client;
-    project.trelloUrl = trelloUrl;
-    project.githubUrl = githubUrl;
-    project.projectUrl = projectUrl;
+    project.tags = tags || project.tags;
+    project.techStack = techStack || project.techStack;
+    project.trelloUrl = trelloUrl || project.trelloUrl;
+    project.githubUrl = githubUrl || project.githubUrl;
+    project.projectUrl = projectUrl || project.projectUrl;
     project.developerFeedback = developerFeedback || project.developerFeedback;
     project.relatedProjects = relatedProjects || project.relatedProjects;
     project.status = status || project.status;
-
-    project.tags =
-      tags === "" ? [] : breakStringDownToArray(tags) || project.tags;
-    project.techStack =
-      techStack === ""
-        ? []
-        : breakStringDownToArray(techStack) || project.techStack;
+    project.images = imageUrls.length > 0 ? imageUrls : project.images;
 
     await project.save();
 
-    return res.json(project);
+    return res
+      .status(200)
+      .json({ message: "Project Updated Successfully", project });
   } catch (error) {
     console.error("Error updating project: ", error);
-    return res.status(500).json({
-      message: "Internal server error when updating project",
-      error: error.message,
-    });
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 //@desc     Remove Project Image
 //@route    DELETE /api/projects/:id
 //@access   Private/Admin
@@ -337,12 +437,11 @@ const createRelatedProjectObj = async (req, res) => {
 //@access   Private/Admin
 const deleteRelatedProjectObj = async (req, res) => {
   try {
-    const { id, relatedProjectId } = req.params;
-    const project = await Project.findById(id);
+    const project = await Project.findById(req.params.id);
     if (!project) {
       return res.status(404).json({ message: "Project Not Found" });
     }
-    await project.relatedProjects.id(relatedProjectId).remove();
+    await project.relatedProjects.id(req.params.relatedProjectId).remove();
     await project.save();
 
     return res

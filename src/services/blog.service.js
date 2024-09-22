@@ -6,25 +6,46 @@ import { Blog } from "../models/blog.model.js";
 const createBlogPost = async (req, res) => {
   try {
     const { title, content, author, categories } = req.body;
+    if (!title || !content || !author || !categories) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
     const blogPost = new Blog({ title, content, author, categories });
     await blogPost.save();
-    return res.status(200).send(blogPost);
+    return res.status(201).send(blogPost);
   } catch (error) {
     console.error("Error creating blog post: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
-//@desc     Get all blog posts
+//@desc     Get all blog posts with pagination
 //@route    GET /api/blogs/
 //@access   Public
 const getAllBlogPosts = async (req, res) => {
   try {
-    const blogPosts = await Blog.find({});
-    if (!blogPosts) {
-      return res.status(404).json({ message: "Blog Posts Not Found." });
-    }
-    return res.send(blogPosts);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const search = req.query.search || "";
+
+    const query = {
+      $or: [
+        { title: { $regex: search, $options: "i" } },
+        { content: { $regex: search, $options: "i" } },
+      ],
+    };
+
+    const blogPosts = await Blog.find(query).skip(skip).limit(limit);
+
+    const total = await Blog.countDocuments(query);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      blogPosts,
+      page,
+      totalPages,
+      total,
+    });
   } catch (error) {
     console.error("Error getting all blog posts: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -32,7 +53,7 @@ const getAllBlogPosts = async (req, res) => {
 };
 
 //@desc     Get blog post by id
-//@route    POST /api/blogs/:id
+//@route    GET /api/blogs/:id
 //@access   Public
 const getBlogPostById = async (req, res) => {
   try {
@@ -52,15 +73,19 @@ const getBlogPostById = async (req, res) => {
 //@access   Private/Admin
 const updateBlogPost = async (req, res) => {
   try {
+    const { title, content, categories } = req.body;
+    if (!title || !content || !categories) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
     const blogPost = await Blog.findByIdAndUpdate(
       req.params.id,
-      req.body.data,
-      {
-        new: true,
-      }
+      { title, content, categories },
+      { new: true }
     );
-    await blogPost.save();
-    return res.status(200).json({ message: "Blog Post Updated!" });
+    if (!blogPost) {
+      return res.status(404).json({ message: "Blog Post Not Found." });
+    }
+    return res.status(200).json({ message: "Blog Post Updated!", blogPost });
   } catch (error) {
     console.error("Error updating a blog post: ", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -73,8 +98,10 @@ const updateBlogPost = async (req, res) => {
 const deleteBlogPost = async (req, res) => {
   try {
     const blogId = req.params.id;
-    await Blog.findByIdAndDelete(blogId);
-
+    const blogPost = await Blog.findByIdAndDelete(blogId);
+    if (!blogPost) {
+      return res.status(404).json({ message: "Blog Post Not Found." });
+    }
     return res.json({ message: "Blog Post Deleted!" });
   } catch (error) {
     console.error("Error deleting a blog post: ", error);
@@ -88,18 +115,19 @@ const deleteBlogPost = async (req, res) => {
 const addCommentToBlogPost = async (req, res) => {
   try {
     const blogPostId = req.params.id;
-
+    const { content, author } = req.body;
+    if (!content || !author) {
+      return res
+        .status(400)
+        .json({ message: "Content and author are required." });
+    }
     const blogPost = await Blog.findById(blogPostId);
-
     if (!blogPost) {
       return res.status(404).json({ message: "Blog Post Not Found." });
     }
-
-    blogPost.comments.push(commentData);
-
+    blogPost.comments.push({ content, author, date: new Date() });
     await blogPost.save();
-
-    return blogPost;
+    return res.status(201).json({ message: "Comment Added!", blogPost });
   } catch (error) {
     console.error("Error creating a blog post comment: ", error);
     return res.status(500).json({ message: "Internal Server Error" });

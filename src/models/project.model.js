@@ -73,13 +73,9 @@ const projectSchema = new Schema(
     designer: String,
     projectType: {
       type: String,
-      enum: "Personal" | "Client" | "Open Source",
-      default: "Personal",
     },
     applicationType: {
       type: String,
-      enum: "Web" | "Mobile" | "Desktop" | "Other",
-      default: "Web",
       required: true,
     },
     budget: String,

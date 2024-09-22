@@ -1,31 +1,73 @@
 import { User } from "../models/user.model.js";
-import generateToken from "../utils/generateToken.js";
+import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
+
+dotenv.config();
+
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_TOKEN, { expiresIn: "15m" });
+};
+
+const generateRefreshToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_REFRESH_TOKEN, { expiresIn: "7d" });
+};
+
+const refreshAuthToken = async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token is required" });
+  }
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_TOKEN);
+    const user = await User.findById(decoded.id);
+
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    const newToken = generateToken(user._id);
+    const newRefreshToken = generateRefreshToken(user._id);
+
+    user.refreshToken = newRefreshToken;
+    await user.save();
+
+    res.json({
+      token: newToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    console.error("Refresh token error: ", error);
+    return res.status(401).json({ message: "Invalid refresh token" });
+  }
+};
 
 //@desc     Get Auth User and Token
 //@route    POST /api/users/login
 //@access   Public
 const postAuthUser = async (req, res) => {
-  try {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    const user = await User.findOne({ username });
+  const user = await User.findOne({ username });
 
-    if (user && (await user.matchPassword(password))) {
-      return res.json({
-        _id: user._id,
-        username: user.username,
-        password: user.password,
-        isAdmin: user.isAdmin,
-        token: generateToken(user._id),
-      });
-    } else {
-      return res
-        .status(401)
-        .json({ message: "Username or Password is invalid." });
-    }
-  } catch (error) {
-    console.error("Error with user login: ", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+  if (user && (await user.matchPassword(password))) {
+    const token = generateToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    return res.json({
+      _id: user._id,
+      username: user.username,
+      password: user.password,
+      isAdmin: user.isAdmin,
+      token,
+      refreshToken,
+    });
+  } else {
+    return res
+      .status(401)
+      .json({ message: "Username or Password is invalid." });
   }
 };
 
@@ -80,4 +122,4 @@ const putUpdateAdmin = async (req, res) => {
   }
 };
 
-export { postAuthUser, getAdminProfile, putUpdateAdmin };
+export { postAuthUser, getAdminProfile, putUpdateAdmin, refreshAuthToken };
