@@ -7,12 +7,33 @@ import {
   refreshAuthToken,
 } from "../services/user.service.js";
 import { protect, admin, authLimiter } from "../middleware/auth.middleware.js";
+import morgan from "morgan";
 
-router.post("/login", authLimiter, postAuthUser);
-router.post("/refresh-token", authLimiter, refreshAuthToken);
+router.post(
+  "/login",
+  authLimiter,
+  morgan(":method :url :status :res[content-length] - :response-time ms"),
+  postAuthUser
+);
+router.post(
+  "/refresh-token",
+  authLimiter,
+  morgan(":method :url :status :res[content-length] - :response-time ms"),
+  refreshAuthToken
+);
 router
   .route("/settings")
-  .put(protect, admin, putUpdateAdmin)
-  .get(protect, admin, getAdminProfile);
+  .put(
+    protect,
+    admin,
+    morgan(":method :url :status :res[content-length] - :response-time ms"),
+    putUpdateAdmin
+  )
+  .get(
+    protect,
+    admin,
+    morgan(":method :url :status :res[content-length] - :response-time ms"),
+    getAdminProfile
+  );
 
 export default router;

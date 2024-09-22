@@ -1,11 +1,10 @@
 import express from "express";
-import path from "path";
 import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import connectDB from "./src/config/db.js";
-import { notFound, errorHandler } from "./src/middleware/error.middleware.js";
+import morgan from "morgan";import { notFound, errorHandler } from "./src/middleware/error.middleware.js";
 
 import projectRoutes from "./src/api/project.api.js";
 import userRoutes from "./src/api/user.api.js";
@@ -29,6 +28,7 @@ const limiter = rateLimit({
   max: 100,
 });
 app.use(limiter);
+
 
 app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);
